@@ -1,2 +1,3 @@
 # readsrc
-Read source codes
+
+阅读源码。
