@@ -25,7 +25,7 @@ int udp_output(const char *buf, int len, ikcpcb *kcp, void *user) {
 
 test 这里是有3种模式，主要体现在 ikcp_nodelay 设置的不同。
 
-再把目光转向 while (1)，首先调用 ikcp_update 更新 KCP 状态，然后 kcp1 调用 ikcp_send 发数据，
+再把目光转向 while (1) ，首先调用 ikcp_update 更新 KCP 状态，然后 kcp1 调用 ikcp_send 发数据，
 vnet 的1端收到数据后会调用 ikcp_input 将数据交给 kcp2，0端收到数据后也会调用 ikcp_input 将数据交给 kcp1。
 
 如果 kcp2 通过 ikcp_recv 收到数据就调用 ikcp_send 发回，而如果 kcp1 收到数据就打印数据并计算 RTT，next 自增一次。
