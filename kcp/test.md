@@ -2,7 +2,7 @@
 
 关于 KCP 提供的一个例子的源码剖析。
 
-## test.cpp
+## [test.cpp](https://github.com/skywind3000/kcp/blob/master/test.cpp)
 
 首先是 udp_output 函数，这个是给 ikcpcb 对象准备的，作为 KCP 的下层协议输出函数，KCP 需要发送数据的时候会用到它。
 
@@ -33,11 +33,11 @@ vnet 的1端收到数据后会调用 ikcp_input 将数据交给 kcp2，0端收�
 当 next 超过1000后跳出循环，随后释放 KCP 对象并进行流量统计。
 
 ```
-#0# ikcp_send(kcp1, ---> vnet->recv(1, ---> ikcp_input(kcp2, ---> ikcp_recv(kcp2, #1#
-#0# ikcp_recv(kcp1, <--- ikcp_input(kcp1, <--- vnet->recv(0, <--- ikcp_send(kcp2, #1#
+#0# ikcp_send(kcp1, ---> vnet->send(0, ---> vnet->recv(1, ---> ikcp_input(kcp2, ---> ikcp_recv(kcp2, #1#
+#0# ikcp_recv(kcp1, <--- ikcp_input(kcp1, <--- vnet->recv(0, <--- vnet->send(1, <--- ikcp_send(kcp2, #1#
 ```
 
-## test.h
+## [test.h](https://github.com/skywind3000/kcp/blob/master/test.h)
 
 首先封装了一些跨平台的函数。
 
