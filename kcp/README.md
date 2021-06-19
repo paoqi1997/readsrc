@@ -41,8 +41,18 @@ struct IKCPSEG
 // 控制块
 struct IKCPCB
 {
+    //  conv: 会话编号
+    //   mtu: 最大传输单元（Maximum Transmission Unit, MTU）
+    //   mss: 最大报文段长度（Maximum Segment Size, MSS）
+    // state: 状态（0/-1）
     IUINT32 conv, mtu, mss, state;
+    // snd_una:
+    // snd_nxt:
+    // rcv_nxt:
     IUINT32 snd_una, snd_nxt, rcv_nxt;
+    //  ts_recent:
+    // ts_lastack:
+    //   ssthresh:
     IUINT32 ts_recent, ts_lastack, ssthresh;
     IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;
     IUINT32 snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe;
@@ -52,10 +62,10 @@ struct IKCPCB
     IUINT32 nodelay, updated;
     IUINT32 ts_probe, probe_wait;
     IUINT32 dead_link, incr;
-    struct IQUEUEHEAD snd_queue;
-    struct IQUEUEHEAD rcv_queue;
-    struct IQUEUEHEAD snd_buf;
-    struct IQUEUEHEAD rcv_buf;
+    struct IQUEUEHEAD snd_queue; // 发送队列
+    struct IQUEUEHEAD rcv_queue; // 接收队列
+    struct IQUEUEHEAD snd_buf;   // 发送缓冲区
+    struct IQUEUEHEAD rcv_buf;   // 接收缓冲区
     IUINT32 *acklist;
     IUINT32 ackcount;
     IUINT32 ackblock;
