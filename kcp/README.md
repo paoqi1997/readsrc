@@ -19,18 +19,19 @@
 struct IKCPSEG
 {
     struct IQUEUEHEAD node;
-    IUINT32 cmd;
-    IUINT32 frg;
-    IUINT32 wnd;
-    IUINT32 ts;
-    IUINT32 sn;
-    IUINT32 una;
-    IUINT32 len;
-    IUINT32 resendts;
-    IUINT32 rto;
-    IUINT32 fastack;
-    IUINT32 xmit;
-    char data[1];
+    IUINT32 conv;     // 会话编号，双方相互传输时需保证 conv 一致
+    IUINT32 cmd;      // 指令，如 IKCP_CMD_PUSH、IKCP_CMD_ACK 等
+    IUINT32 frg;      // 分片数，用于标识是 KCP 包的第几个分片
+    IUINT32 wnd;      // 窗口大小，发送方的发送窗口不能超过接收方的窗口大小
+    IUINT32 ts;       // 发送时的时间戳
+    IUINT32 sn;       // 序号
+    IUINT32 una;      // 未确认序号，在未丢包的情况下，如果收到 sn=10 的包的话，una 为11
+    IUINT32 len;      // 数据长度
+    IUINT32 resendts; // 下次超时重传的时间戳
+    IUINT32 rto;      // 超时重传的等待时间
+    IUINT32 fastack;  // 分片被跳过的次数，超过既定次数无需等待超时，直接重传，比如收到[1,3,4,5]，收到3表示2被跳过1次，收到4表示2被跳过2次
+    IUINT32 xmit;     // 重传次数，每重传1次+1
+    char data[1];     // 数据内容
 };
 ```
 
@@ -69,4 +70,28 @@ struct IKCPCB
 };
 
 typedef struct IKCPCB ikcpcb;
+```
+
+## 附录
+
+### 1. KCP 包结构
+
+```
+KCP has only one kind of segment: both the data and control messages are
+encoded into the same structure and share the same header.
+
+The KCP packet (aka. segment) structure is as following:
+
+0               4   5   6       8 (BYTE)
++---------------+---+---+-------+
+|     conv      |cmd|frg|  wnd  |
++---------------+---+---+-------+   8
+|     ts        |     sn        |
++---------------+---------------+  16
+|     una       |     len       |
++---------------+---------------+  24
+|                               |
+|        DATA (optional)        |
+|                               |
++-------------------------------+
 ```
