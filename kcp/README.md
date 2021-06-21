@@ -59,27 +59,27 @@ struct IKCPCB
     //    rx_rto: 由 ACK 接收延迟计算得到的重传超时时间（RTO, Retransmission Timeout）
     // rx_minrto: 最小重传超时时间
     IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;
-    // snd_wnd:
-    // rcv_wnd:
-    // rmt_wnd:
-    //    cwnd:
-    //   probe:
+    // snd_wnd: 发送窗口大小
+    // rcv_wnd: 接收窗口大小
+    // rmt_wnd: 对端接收窗口大小
+    //    cwnd: 拥塞窗口大小
+    //   probe: 探测变量，如 IKCP_ASK_SEND、IKCP_ASK_TELL 等
     IUINT32 snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe;
-    //  current:
-    // interval:
-    // ts_flush:
-    //     xmit:
+    //  current: 当前时间戳
+    // interval: 内部 flush 的时间间隔
+    // ts_flush: 下次 flush 的时间戳
+    //     xmit: 发送 segment 的次数
     IUINT32 current, interval, ts_flush, xmit;
-    IUINT32 nrcv_buf, nsnd_buf; //
-    IUINT32 nrcv_que, nsnd_que; //
-    // nodelay:
-    // updated:
+    IUINT32 nrcv_buf, nsnd_buf; // 接收缓冲区大小/发送缓冲区大小
+    IUINT32 nrcv_que, nsnd_que; // 接收队列/发送队列
+    // nodelay: 是否启用 nodelay 模式
+    // updated: 是否调用过 ikcp_update 函数
     IUINT32 nodelay, updated;
-    //   ts_probe:
-    // probe_wait:
+    //   ts_probe: 下次探测的时间戳
+    // probe_wait: 探测前需要等待的时间
     IUINT32 ts_probe, probe_wait;
-    // dead_link:
-    //      incr:
+    // dead_link: IKCP_DEADLINK
+    //      incr: 可发送的最大数据量
     IUINT32 dead_link, incr;
     struct IQUEUEHEAD snd_queue; // 发送队列
     struct IQUEUEHEAD rcv_queue; // 接收队列
