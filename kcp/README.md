@@ -31,7 +31,7 @@ struct IKCPSEG
     IUINT32 rto;      // 超时重传的等待时间
     IUINT32 fastack;  // 分片被跳过的次数，超过既定次数无需等待超时，直接重传，比如收到[1,3,4,5]，收到3表示2被跳过1次，收到4表示2被跳过2次
     IUINT32 xmit;     // 重传次数，每重传1次+1
-    char data[1];     // 数据内容
+    char data[1];     // 数据内容（如果是data[0]/data[]就是柔性数组）
 };
 ```
 
@@ -46,18 +46,18 @@ struct IKCPCB
     //   mss: 最大报文段长度（Maximum Segment Size, MSS）
     // state: 状态（0/-1）
     IUINT32 conv, mtu, mss, state;
-    // snd_una:
-    // snd_nxt:
-    // rcv_nxt:
+    // snd_una: 第一个未确认的发送包序号
+    // snd_nxt: 下一个待使用的发生包序号
+    // rcv_nxt: 下一个待使用的接收包序号
     IUINT32 snd_una, snd_nxt, rcv_nxt;
-    //  ts_recent:
-    // ts_lastack:
-    //   ssthresh:
+    //  ts_recent: 当前时间戳
+    // ts_lastack: 上次确认的时间戳
+    //   ssthresh: 慢开始门限
     IUINT32 ts_recent, ts_lastack, ssthresh;
-    // rx_rttval:
-    //   rx_srtt:
-    //    rx_rto:
-    // rx_minrto:
+    // rx_rttval: RTT 的变化量
+    //   rx_srtt: 平滑后的 RTT（Smoothed Round Trip Time）
+    //    rx_rto: 由 ACK 接收延迟计算得到的重传超时时间（RTO, Retransmission Timeout）
+    // rx_minrto: 最小重传超时时间
     IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;
     // snd_wnd:
     // rcv_wnd:
@@ -85,15 +85,17 @@ struct IKCPCB
     struct IQUEUEHEAD rcv_queue; // 接收队列
     struct IQUEUEHEAD snd_buf;   // 发送缓冲区
     struct IQUEUEHEAD rcv_buf;   // 接收缓冲区
-    IUINT32 *acklist;   //
-    IUINT32 ackcount;   //
-    IUINT32 ackblock;   //
-    void *user;         //
-    char *buffer;       //
-    int fastresend;     //
-    int fastlimit;      //
-    int nocwnd, stream; //
-    int logmask;        //
+    IUINT32 *acklist; //
+    IUINT32 ackcount; //
+    IUINT32 ackblock; //
+    void *user;       //
+    char *buffer;     //
+    int fastresend;   //
+    int fastlimit;    //
+    // nocwnd:
+    // stream:
+    int nocwnd, stream;
+    int logmask;      //
     int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user); //
     void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);       //
 };
