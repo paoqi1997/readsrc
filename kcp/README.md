@@ -54,29 +54,48 @@ struct IKCPCB
     // ts_lastack:
     //   ssthresh:
     IUINT32 ts_recent, ts_lastack, ssthresh;
+    // rx_rttval:
+    //   rx_srtt:
+    //    rx_rto:
+    // rx_minrto:
     IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;
+    // snd_wnd:
+    // rcv_wnd:
+    // rmt_wnd:
+    //    cwnd:
+    //   probe:
     IUINT32 snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe;
+    //  current:
+    // interval:
+    // ts_flush:
+    //     xmit:
     IUINT32 current, interval, ts_flush, xmit;
-    IUINT32 nrcv_buf, nsnd_buf;
-    IUINT32 nrcv_que, nsnd_que;
+    IUINT32 nrcv_buf, nsnd_buf; //
+    IUINT32 nrcv_que, nsnd_que; //
+    // nodelay:
+    // updated:
     IUINT32 nodelay, updated;
+    //   ts_probe:
+    // probe_wait:
     IUINT32 ts_probe, probe_wait;
+    // dead_link:
+    //      incr:
     IUINT32 dead_link, incr;
     struct IQUEUEHEAD snd_queue; // 发送队列
     struct IQUEUEHEAD rcv_queue; // 接收队列
     struct IQUEUEHEAD snd_buf;   // 发送缓冲区
     struct IQUEUEHEAD rcv_buf;   // 接收缓冲区
-    IUINT32 *acklist;
-    IUINT32 ackcount;
-    IUINT32 ackblock;
-    void *user;
-    char *buffer;
-    int fastresend;
-    int fastlimit;
-    int nocwnd, stream;
-    int logmask;
-    int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user);
-    void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);
+    IUINT32 *acklist;   //
+    IUINT32 ackcount;   //
+    IUINT32 ackblock;   //
+    void *user;         //
+    char *buffer;       //
+    int fastresend;     //
+    int fastlimit;      //
+    int nocwnd, stream; //
+    int logmask;        //
+    int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user); //
+    void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);       //
 };
 
 typedef struct IKCPCB ikcpcb;
