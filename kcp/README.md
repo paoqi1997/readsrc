@@ -85,19 +85,19 @@ struct IKCPCB
     struct IQUEUEHEAD rcv_queue; // 接收队列
     struct IQUEUEHEAD snd_buf;   // 发送缓冲区
     struct IQUEUEHEAD rcv_buf;   // 接收缓冲区
-    IUINT32 *acklist; //
-    IUINT32 ackcount; //
-    IUINT32 ackblock; //
-    void *user;       //
-    char *buffer;     //
-    int fastresend;   //
-    int fastlimit;    //
-    // nocwnd:
-    // stream:
+    IUINT32 *acklist; // 待发送的 ACK 列表
+    IUINT32 ackcount; // acklist 中 ACK 的数量
+    IUINT32 ackblock; // acklist 最大可容纳的 ACK 数量，为2的倍数，一开始为8
+    void *user;       // 用于回调的指针
+    char *buffer;     // 消息存储字节流
+    int fastresend;   // 触发快重传的重复 ACK 个数
+    int fastlimit;    // 快重传最大次数
+    // nocwnd: 是否关闭流控
+    // stream: 是否采用流传输模式
     int nocwnd, stream;
-    int logmask;      //
-    int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user); //
-    void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);       //
+    int logmask;      // 日志开关
+    int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user); // 发送回调
+    void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);       // 写日志回调
 };
 
 typedef struct IKCPCB ikcpcb;
