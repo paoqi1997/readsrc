@@ -1,6 +1,6 @@
 # KCP
 
-关于 [KCP](https://github.com/skywind3000/kcp) 的源码剖析。
+关于 [KCP](https://sourcegraph.com/github.com/skywind3000/kcp) 的源码剖析。
 
 ## [ikcp.c](https://github.com/skywind3000/kcp/blob/master/ikcp.c)
 
