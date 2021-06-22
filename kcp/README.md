@@ -4,6 +4,12 @@
 
 ## [ikcp.c](https://github.com/skywind3000/kcp/blob/master/ikcp.c)
 
+首先定义了一大堆常量，如 IKCP_RTO_MIN、IKCP_CMD_PUSH 等，接下来会用到它们。
+
+然后是 ikcp_encodexxx 和 ikcp_decodexxx 一系列函数，如 ikcp_encode8u 和 ikcp_decode8u，用于消息编解码。
+
+接着定义了一些工具函数，如 \_imin_、\_imax_、\_ibound_ 等。
+
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
 首先对一些基本类型进行平台抽象，比如 test.h 用到的 IINT64 和 IUINT32。
@@ -95,13 +101,20 @@ struct IKCPCB
     // nocwnd: 是否关闭流控
     // stream: 是否采用流传输模式
     int nocwnd, stream;
-    int logmask;      // 日志开关
+    int logmask;      // 日志掩码
     int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user); // 发送回调
     void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);       // 写日志回调
 };
 
 typedef struct IKCPCB ikcpcb;
 ```
+
+接下来是 IKCP_LOG_OUTPUT、IKCP_LOG_INPUT 等一系列日志掩码，如果 ikcpcb 对象的 logmask 成员设置了某个日志掩码，
+那么调用 ikcp_canlog 和 ikcp_log 都将受到约束。
+
+也就是说，外部传入的 mask 和 kcp->logmask 与运算的结果不为0并且 kcp->writelog 不为 NULL，函数才不会提前 return。
+
+最后是由 `extern "C"` 包裹的一些函数声明，如 ikcp_create、ikcp_update 等。
 
 ## 附录
 
