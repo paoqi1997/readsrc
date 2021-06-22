@@ -30,7 +30,7 @@ ikcp_output 函数首先会检查日志掩码是否符合 IKCP_LOG_OUTPUT 预设
 
 ikcp_qprint 函数打印给定 IQUEUEHEAD 对象的各个 IKCPSEG 的信息，包括 seg->sn 和 seg->ts。
 
-ikcp_create 和 ikcp_release 函数分别用于创建和释放 ikcpcb 对象，其中 ikcp_create 中有些成员的初始化值得注意。
+ikcp_create 和 ikcp_release 函数分别用于创建和释放 ikcpcb 对象，其中 ikcp_create 中某些成员的初始化值得注意。
 
 ikcp_setoutput 函数用于设置 ikcpcb 对象的 output 成员。
 
