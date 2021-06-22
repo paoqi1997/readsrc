@@ -10,6 +10,30 @@
 
 接着定义了一些工具函数，如 \_imin_、\_imax_、\_ibound_ 等。
 
+接下来提供了 ikcp_malloc_hook 和 ikcp_free_hook 两个函数指针变量，可以通过 ikcp_allocator 设置它们。
+
+调用 ikcp_malloc 时如果有设置 ikcp_malloc_hook 就调用它，没有就调用 malloc；
+调用 ikcp_free 时如果有设置 ikcp_free_hook 就调用它，没有就调用 free。
+
+同时还提供 ikcp_segment_new 和 ikcp_segment_delete 函数，它们分别用于创建和释放 IKCPSEG 对象。
+
+```c
+// 注意这个size
+static IKCPSEG* ikcp_segment_new(ikcpcb *kcp, int size) {
+    return (IKCPSEG*) ikcp_malloc(sizeof(IKCPSEG) + size);
+}
+```
+
+再然后是 ikcp_log 和 ikcp_canlog 两个函数，它们都受 kcp->logmask 的约束，其中 ikcp_log 顺利的话会调用 kcp->writelog。
+
+ikcp_output 函数首先会检查日志掩码是否符合 IKCP_LOG_OUTPUT 预设的条件，符合的话就调用 ikcp_log，然后调用 kcp->output。
+
+ikcp_qprint 函数打印给定 IQUEUEHEAD 对象的各个 IKCPSEG 的信息，包括 seg->sn 和 seg->ts。
+
+ikcp_create 和 ikcp_release 函数分别用于创建和释放 ikcpcb 对象，其中 ikcp_create 中有些成员的初始化值得注意。
+
+ikcp_setoutput 函数用于设置 ikcpcb 对象的 output 成员。
+
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
 首先对一些基本类型进行平台抽象，比如 test.h 用到的 IINT64 和 IUINT32。
