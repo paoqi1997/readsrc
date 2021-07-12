@@ -25,13 +25,13 @@ logpath = "." -- log 保存到指定目录
 address = "127.0.0.1:2526"
 
 -- 如果把这个 skynet 进程作为主进程启动，那么需要配置 standalone 这一项，表示这个进程是主节点
--- 它需要开启一个控制中心，监听一个端口，以供其他节点接入
+-- 它需要开启一个控制中心，监听一个端口，让其他节点接入
 standalone = "0.0.0.0:2013"
--- 指定 skynet 节点的地址和端口，如果配置了 standalone 项，那么 master 这一项通常与 standalone 项相同
+-- 指定 skynet 控制中心的地址和端口，如果配置了 standalone 项，那么 master 这一项通常与 standalone 相同
 master = "127.0.0.1:2013"
 
 bootstrap = "snlua bootstrap" -- skynet 启动的第一个服务及其启动参数
-start     = "main"            -- bootstrap 最后一个环节将启动的 lua 服务，也就是定制的 skynet 节点的主程序
+start     = "main"            -- bootstrap 最后一个环节将启动的 lua 服务，也就是你定制的 skynet 节点的主程序
 
 cpath     = root.."cservice/?.so" -- 用 C 编写的服务模块的位置
 ```
@@ -100,6 +100,20 @@ end)
 ```
 
 ### [proto.lua](https://github.com/cloudwu/skynet/blob/master/examples/proto.lua)
+
+```lua
+local sprotoparser = require "sprotoparser"
+
+local proto = {}
+
+proto.c2s = sprotoparser.parse [[
+]]
+
+proto.s2c = sprotoparser.parse [[
+]]
+
+return proto
+```
 
 ### [simpledb.lua](https://github.com/cloudwu/skynet/blob/master/examples/simpledb.lua)
 
