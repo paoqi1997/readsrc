@@ -107,15 +107,90 @@ local sprotoparser = require "sprotoparser"
 local proto = {}
 
 proto.c2s = sprotoparser.parse [[
+.package {
+    type 0 : integer
+    session 1 : integer
+}
+
+handshake 1 {
+    response {
+        msg 0  : string
+    }
+}
+
+get 2 {
+    request {
+        what 0 : string
+    }
+    response {
+        result 0 : string
+    }
+}
+
+set 3 {
+    request {
+        what 0 : string
+        value 1 : string
+    }
+}
+
+quit 4 {}
 ]]
 
 proto.s2c = sprotoparser.parse [[
+.package {
+    type 0 : integer
+    session 1 : integer
+}
+
+heartbeat 1 {}
 ]]
 
 return proto
 ```
 
 ### [simpledb.lua](https://github.com/cloudwu/skynet/blob/master/examples/simpledb.lua)
+
+```lua
+local skynet = require "skynet"
+require "skynet.manager" -- import skynet.register
+local db = {}
+
+local command = {}
+
+function command.GET(key)
+    return db[key]
+end
+
+function command.SET(key, value)
+    local last = db[key]
+    db[key] = value
+    return last
+end
+
+skynet.start(function()
+    skynet.dispatch("lua", function(session, address, cmd, ...)
+        cmd = cmd:upper()
+        if cmd == "PING" then
+            assert(session == 0)
+            local str = (...)
+            if #str > 20 then
+                str = str:sub(1,20) .. "...(" .. #str .. ")"
+            end
+            skynet.error(string.format("%s ping %s", skynet.address(address), str))
+            return
+        end
+        local f = command[cmd]
+        if f then
+            skynet.ret(skynet.pack(f(...)))
+        else
+            error(string.format("Unknown command %s", tostring(cmd)))
+        end
+    end)
+    -- skynet.traceproto("lua", false) -- true off tracelog
+    skynet.register "SIMPLEDB"
+end)
+```
 
 ### [watchdog.lua](https://github.com/cloudwu/skynet/blob/master/examples/watchdog.lua)
 
