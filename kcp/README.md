@@ -34,6 +34,26 @@ ikcp_create 和 ikcp_release 函数分别用于创建和释放 ikcpcb 对象，�
 
 ikcp_setoutput 函数用于设置 ikcpcb 对象的 output 成员。
 
+### 调用关系
+
+如下所示：
+
+```
+// 初始化
+ikcp_create -> ikcpcb
+ikcpcb->output = udp_output(sendto)
+
+// 发端
+ikcp_send(ikcpcb, ...)
+...
+ikcp_update(ikcpcb, ...) -> ikcp_flush -> ikcp_output(sendto) -> 对端
+
+// 收端
+对端 -> recvfrom -> ikcp_input
+...
+ikcp_recv(ikcpcb, ...) # 有事没事都可以调用，rcv_queue 有数据才会写到 buffer
+```
+
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
 首先对一些基本类型进行平台抽象，比如 test.h 用到的 IINT64 和 IUINT32。
