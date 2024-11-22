@@ -54,6 +54,105 @@ ikcp_update(ikcpcb, ...) -> ikcp_flush -> ikcp_output(sendto) -> 对端
 ikcp_recv(ikcpcb, ...) # 有事没事都可以调用，rcv_queue 有数据才会写到 buffer
 ```
 
+### ikcp_flush
+
+首先发送 ACK 列表中所有的 ACK。
+
+```c
+IKCPSEG seg;
+...
+seg.cmd = IKCP_CMD_ACK;
+...
+count = kcp->ackcount;
+for (i = 0; i < count; i++) {
+    size = (int)(ptr - buffer);
+    // IKCP_OVERHEAD 为24，是报文头的大小，ACK 报文不需要 DATA 段
+    if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu) {
+        ikcp_output(kcp, buffer, size);
+        ptr = buffer;
+    }
+    ikcp_ack_get(kcp, i, &seg.sn, &seg.ts);
+    ptr = ikcp_encode_seg(ptr, &seg);
+}
+
+kcp->ackcount = 0;
+```
+
+在对端接收窗口大小为0时探测其大小。
+
+```c
+if (kcp->rmt_wnd == 0) {
+    ...
+}
+
+if (kcp->probe & IKCP_ASK_SEND) {
+    ...
+}
+
+if (kcp->probe & IKCP_ASK_TELL) {
+    ...
+}
+
+kcp->probe = 0;
+```
+
+计算拥塞窗口的大小。
+
+```c
+cwnd = _imin_(kcp->snd_wnd, kcp->rmt_wnd);
+if (kcp->nocwnd == 0) cwnd = _imin_(kcp->cwnd, cwnd);
+```
+
+将数据从 snd_queue 搬到 snd_buf。
+
+```c
+while (_itimediff(kcp->snd_nxt, kcp->snd_una + cwnd) < 0) {
+    ...
+}
+```
+
+快重传相关。
+
+```c
+resent = (kcp->fastresend > 0)? (IUINT32)kcp->fastresend : 0xffffffff;
+rtomin = (kcp->nodelay == 0)? (kcp->rx_rto >> 3) : 0;
+```
+
+将 snd_buf 中符合条件的报文段都发送出去。
+
+```c
+for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next) {
+    ...
+}
+```
+
+将剩余报文段也发送出去。
+
+```c
+size = (int)(ptr - buffer);
+if (size > 0) {
+    ikcp_output(kcp, buffer, size);
+}
+```
+
+根据发生快重传和超时重传与否计算慢开始门限 ssthresh 和拥塞窗口 cwnd 的大小。
+
+```c
+// 触发快重传
+if (change) {
+    ...
+}
+
+// 有报文段因超时后仍没有得到确认而需要重传
+if (lost) {
+    ...
+}
+
+if (kcp->cwnd < 1) {
+    ...
+}
+```
+
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
 首先对一些基本类型进行平台抽象，比如 test.h 用到的 IINT64 和 IUINT32。
