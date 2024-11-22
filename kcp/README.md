@@ -54,6 +54,12 @@ ikcp_update(ikcpcb, ...) -> ikcp_flush -> ikcp_output(sendto) -> 对端
 ikcp_recv(ikcpcb, ...) # 有事没事都可以调用，rcv_queue 有数据才会写到 buffer
 ```
 
+### ikcp_send
+
+### ikcp_update
+
+驱动 ikcp_flush，但两次调用之间的时间间隔不应小于 interval，默认为100ms。
+
 ### ikcp_flush
 
 首先发送 ACK 列表中所有的 ACK。
@@ -152,6 +158,75 @@ if (kcp->cwnd < 1) {
     ...
 }
 ```
+
+### ikcp_input
+
+会不断地解析接收到的数据，直到数据不足以形成一个报头。
+
+```c
+while (1) {
+    if (size < (int)IKCP_OVERHEAD) break;
+
+    data = ikcp_decode32u(data, &conv);
+    if (conv != kcp->conv) return -1;
+
+    data = ikcp_decode8u(data, &cmd);
+    ...
+    data = ikcp_decode32u(data, &len);
+
+    size -= IKCP_OVERHEAD;
+
+    ...
+
+    // 更新对端接收窗口大小
+    kcp->rmt_wnd = wnd;
+
+    // 将已得到确认的报文段从 snd_buf 中删除
+    // 收到的报文段的 una 大于 snd_buf 中的报文段的 sn
+    ikcp_parse_una(kcp, una);
+
+    // 向右移动 snd_una
+    ikcp_shrink_buf(kcp);
+
+    // 处理报文段
+    if (cmd == IKCP_CMD_ACK) {
+        ...
+    }
+    else if (cmd == IKCP_CMD_PUSH) {
+        ...
+    }
+    else if (cmd == IKCP_CMD_WASK) {
+        ...
+    }
+    else if (cmd == IKCP_CMD_WINS) {
+        ...
+    }
+    else {
+        return -3;
+    }
+
+    data += len;
+    size -= len;
+}
+```
+
+将 snd_buf 中 sn 小于 maxack 且未确认送达的报文段的 fastack +1。
+
+```c
+if (flag != 0) {
+    ikcp_parse_fastack(kcp, maxack, latest_ts);
+}
+```
+
+计算拥塞窗口 cwnd 的大小。
+
+```c
+if (_itimediff(kcp->snd_una, prev_una) > 0) {
+    ...
+}
+```
+
+### ikcp_recv
 
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
