@@ -56,6 +56,55 @@ ikcp_recv(ikcpcb, ...) # 有事没事都可以调用，rcv_queue 有数据才会
 
 ### ikcp_send
 
+如果开启了流传输模式，就将 buffer 中的数据尽可能地追加到最后一个报文段中，使其 DATA 段的长度等于 MSS。
+
+```c
+if (kcp->stream != 0) {
+    if (!iqueue_is_empty(&kcp->snd_queue)) {
+        IKCPSEG *old = iqueue_entry(kcp->snd_queue.prev, IKCPSEG, node);
+        if (old->len < kcp->mss) {
+            ...
+        }
+    }
+    if (len <= 0) {
+        return sent;
+    }
+}
+```
+
+计算本次发送的数据需要分片的数量。
+
+```c
+if (len <= (int)kcp->mss) count = 1;
+else count = (len + kcp->mss - 1) / kcp->mss;
+```
+
+本次分片数量超过限制。
+
+```c
+if (count >= (int)IKCP_WND_RCV) {
+    if (kcp->stream != 0 && sent > 0) 
+        return sent;
+    return -2;
+}
+```
+
+最小分片数量为1。
+
+```c
+if (count == 0) count = 1;
+```
+
+对数据进行分片并将对应创建的报文段对象放入 snd_queue。
+
+```c
+for (i = 0; i < count; i++) {
+    ...
+}
+
+return sent;
+```
+
 ### ikcp_update
 
 驱动 ikcp_flush，但两次调用之间的时间间隔不应小于 interval，默认为100ms。
@@ -228,6 +277,60 @@ if (_itimediff(kcp->snd_una, prev_una) > 0) {
 
 ### ikcp_recv
 
+获取 rcv_queue 中第一个包的大小，它可能由一个或多个分片组成。
+
+```c
+peeksize = ikcp_peeksize(kcp);
+
+// 不足以形成一个包
+if (peeksize < 0) 
+    return -2;
+
+// 接收缓冲区长度不足
+if (peeksize > len) 
+    return -3;
+```
+
+若接收队列的大小大于等于接收窗口的大小，有点拥塞，看看收完一波包后可不可以执行快恢复。
+
+```c
+if (kcp->nrcv_que >= kcp->rcv_wnd)
+    recover = 1;
+```
+
+将 rcv_queue 中的数据写到 buffer。
+
+```c
+for (len = 0, p = kcp->rcv_queue.next; p != &kcp->rcv_queue; ) {
+    ...
+
+    // 0表示只有一个分片或者最后一个分片
+    if (fragment == 0) 
+        break;
+}
+
+assert(len == peeksize);
+```
+
+将数据从 rcv_buf 搬到 rcv_queue。
+
+```c
+while (! iqueue_is_empty(&kcp->rcv_buf)) {
+    ...
+}
+```
+
+收完一波包后，接收队列的大小已经小于接收窗口的大小，可以执行快恢复（虽然最后的结果是 do nothing）。
+
+```c
+// fast recover
+if (kcp->nrcv_que < kcp->rcv_wnd && recover) {
+    kcp->probe |= IKCP_ASK_TELL;
+}
+
+return len;
+```
+
 ## [ikcp.h](https://github.com/skywind3000/kcp/blob/master/ikcp.h)
 
 首先对一些基本类型进行平台抽象，比如 test.h 用到的 IINT64 和 IUINT32。
@@ -295,7 +398,7 @@ struct IKCPCB
     //     xmit: 发送 segment 的次数
     IUINT32 current, interval, ts_flush, xmit;
     IUINT32 nrcv_buf, nsnd_buf; // 接收缓冲区大小/发送缓冲区大小
-    IUINT32 nrcv_que, nsnd_que; // 接收队列/发送队列
+    IUINT32 nrcv_que, nsnd_que; // 接收队列大小/发送队列大小
     // nodelay: 是否启用 nodelay 模式
     // updated: 是否调用过 ikcp_update 函数
     IUINT32 nodelay, updated;
@@ -333,6 +436,33 @@ typedef struct IKCPCB ikcpcb;
 也就是说，外部传入的 mask 和 kcp->logmask 与运算的结果不为0并且 kcp->writelog 不为 NULL，函数才不会提前 return。
 
 最后是由 `extern "C"` 包裹的一些函数声明，如 ikcp_create、ikcp_update 等。
+
+### iqueue 相关
+
+iqueue_head 结构体和 iqueue_xxx 系列操作实现了双向循环链表。
+
+```
+IQUEUE_INIT(ptr): ptr -> ptr
+IQUEUE_ADD(node, head): head -> head->next ---> head -> node -> head->next
+IQUEUE_ADD_TAIL(node, head): head->prev -> head ---> head->prev -> node -> head
+```
+
+## TCP vs KCP
+
+首先汇总一下相关的一些概念：
+
+```
+MTU(Maximum Transmission Unit): 最大传输单元，就是报头+MSS
+MSS(Maximum Segment Size): 最大报文段长度，实际上是指数据段的长度
+```
+
+## TPs
+
++ []()
+
++ []()
+
++ []()
 
 ## 附录
 
