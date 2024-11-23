@@ -177,7 +177,40 @@ rtomin = (kcp->nodelay == 0)? (kcp->rx_rto >> 3) : 0;
 
 ```c
 for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next) {
-    ...
+    IKCPSEG *segment = iqueue_entry(p, IKCPSEG, node);
+    int needsend = 0;
+    // 第一次发送
+    if (segment->xmit == 0) {
+        ...
+    }
+    // 触发超时重传
+    else if (_itimediff(current, segment->resendts) >= 0) {
+        ...
+        if (kcp->nodelay == 0) {
+            segment->rto += _imax_(segment->rto, (IUINT32)kcp->rx_rto);
+        } else {
+            IINT32 step = (kcp->nodelay < 2)? 
+                ((IINT32)(segment->rto)) : kcp->rx_rto;
+            // RTO *= 1.5
+            segment->rto += step / 2;
+        }
+        segment->resendts = current + segment->rto;
+        lost = 1;
+    }
+    // 跳过了 fastack 个报文段，触发快重传
+    else if (segment->fastack >= resent) {
+        if ((int)segment->xmit <= kcp->fastlimit || 
+            kcp->fastlimit <= 0) {
+            ...
+            change++;
+            ...
+        }
+
+    }
+
+    if (needsend) {
+        ...
+    }
 }
 ```
 
@@ -454,7 +487,39 @@ IQUEUE_ADD_TAIL(node, head): head->prev -> head ---> head->prev -> node -> head
 ```
 MTU(Maximum Transmission Unit): 最大传输单元，就是报头+MSS
 MSS(Maximum Segment Size): 最大报文段长度，实际上是指数据段的长度
+
+RTT(Round Trip Time): 往返时延，即从发送数据到收到确认所经历的时间
+RTO(Retransmission Timeout): 重传超时时间，意思是从发送数据的时刻开始算起，超过这个时间仍未收到确认便需要重传
+
+cwnd(congestion window): 拥塞窗口
+ssthresh(slow start threshold): 慢开始门限
+
+ARQ(Automatic Repeat-reQuest): 自动重传请求
+UNA(Unacknowledged): 第一个尚未收到确认的序号，这意味着在它之前的数据包都已经被正确接收
+ACK(Acknowledgment): 确认号
 ```
+
+主要关注 ARQ 协议、滑动窗口和拥塞控制三个方面。
+
+ARQ 协议
+
+1. 发生超时重传后，TCP 的 RTO 翻倍，而 KCP 的是乘以1.5，这一点通过 ikcp_nodelay 的 nodelay 来控制。
+
+2. TCP 重传用的是 GBN 协议，而 KCP 是选择性重传。
+
+3. KCP 支持快重传，这一点通过 ikcp_nodelay 的 resend 来控制。
+
+4. TCP 有 Delayed ACK 机制，而 KCP 可以调节 ACK 延迟，这一点应该是通过 ikcp_update_ack 来实现。
+
+5. 按照韦神的说法，ARQ 响应有两种方式：UNA 和 ACK。TCP 用的是连续 ARQ 协议，是对收到的最后一个分组进行确认，应该是 UNA 模式；而 ACK 模式更贴合停止等待 ARQ 协议的描述一些。KCP 将 UNA 和 ACK 结合在一起使用。
+
+滑动窗口
+
+1. 两者之间没什么区别。
+
+拥塞控制
+
+1. KCP 方面可以通过 ikcp_nodelay 的 nc 来决定是否关闭流控，若将其设置为1，cwnd 将只取决于发送窗口大小和对端接收窗口大小的最小值，不再受 kcp->cwnd 的影响。当然 kcp->cwnd 还是照常调节，引入了慢开始、快恢复等机制。
 
 ## TPs
 
