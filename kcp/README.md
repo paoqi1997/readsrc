@@ -317,9 +317,40 @@ if (flag != 0) {
 计算拥塞窗口 cwnd 的大小。
 
 ```c
+// una 向右移动了
 if (_itimediff(kcp->snd_una, prev_una) > 0) {
-    ...
+    if (kcp->cwnd < kcp->rmt_wnd) {
+        IUINT32 mss = kcp->mss;
+        // 慢开始阶段，每收到一个 ACK，cwnd 就相应+1
+        // Round 1: cwnd 为1，发送1个报文段并收到1个确认，cwnd + 1 = 2
+        // Round 2: cwnd 为2，发送2个报文段并收到2个确认，cwnd + 2 = 4
+        // Round 3: cwnd 为4，发送4个报文段并收到4个确认，cwnd + 4 = 8
+        // ...
+        if (kcp->cwnd < kcp->ssthresh) {
+            kcp->cwnd++;
+            kcp->incr += mss;
+        }
+        // 拥塞避免阶段
+        else {
+            if (kcp->incr < mss) kcp->incr = mss;
+            kcp->incr += (mss * mss) / kcp->incr + (mss / 16);
+            // incr 的增加值超过一个 mss 的大小
+            if ((kcp->cwnd + 1) * mss <= kcp->incr) {
+            #if 1
+                kcp->cwnd = (kcp->incr + mss - 1) / ((mss > 0)? mss : 1);
+            #else
+                kcp->cwnd++;
+            #endif
+            }
+        }
+        if (kcp->cwnd > kcp->rmt_wnd) {
+            kcp->cwnd = kcp->rmt_wnd;
+            kcp->incr = kcp->rmt_wnd * mss;
+        }
+    }
 }
+
+return 0;
 ```
 
 ### ikcp_recv
