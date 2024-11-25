@@ -83,7 +83,7 @@ else count = (len + kcp->mss - 1) / kcp->mss;
 
 ```c
 if (count >= (int)IKCP_WND_RCV) {
-    if (kcp->stream != 0 && sent > 0) 
+    if (kcp->stream != 0 && sent > 0)
         return sent;
     return -2;
 }
@@ -114,6 +114,7 @@ return sent;
 首先发送 ACK 列表中所有的 ACK。
 
 ```c
+...
 IKCPSEG seg;
 ...
 seg.cmd = IKCP_CMD_ACK;
@@ -138,6 +139,9 @@ kcp->ackcount = 0;
 ```c
 if (kcp->rmt_wnd == 0) {
     ...
+} else {
+    kcp->ts_probe = 0;
+    kcp->probe_wait = 0;
 }
 
 if (kcp->probe & IKCP_ASK_SEND) {
@@ -199,7 +203,7 @@ for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next) {
     }
     // 跳过了 fastack 个报文段，触发快重传
     else if (segment->fastack >= resent) {
-        if ((int)segment->xmit <= kcp->fastlimit || 
+        if ((int)segment->xmit <= kcp->fastlimit ||
             kcp->fastlimit <= 0) {
             ...
             change++;
@@ -260,7 +264,15 @@ if (kcp->cwnd < 1) {
 会不断地解析接收到的数据，直到数据不足以形成一个报头。
 
 ```c
+IUINT32 prev_una = kcp->snd_una;
+...
+
 while (1) {
+    IUINT32 ts, sn, len, una, conv;
+    IUINT16 wnd;
+    IUINT8 cmd, frg;
+    IKCPSEG *seg;
+
     if (size < (int)IKCP_OVERHEAD) break;
 
     data = ikcp_decode32u(data, &conv);
@@ -306,7 +318,7 @@ while (1) {
 }
 ```
 
-将 snd_buf 中 sn 小于 maxack 且未确认送达的报文段的 fastack +1。
+将 snd_buf 中 sn 小于 maxack 且未确认送达的报文段的 fastack +1，maxack 是本轮接收的 ACK 报文中最新的序号。
 
 ```c
 if (flag != 0) {
@@ -358,14 +370,16 @@ return 0;
 获取 rcv_queue 中第一个包的大小，它可能由一个或多个分片组成。
 
 ```c
+...
+
 peeksize = ikcp_peeksize(kcp);
 
 // 不足以形成一个包
-if (peeksize < 0) 
+if (peeksize < 0)
     return -2;
 
 // 接收缓冲区长度不足
-if (peeksize > len) 
+if (peeksize > len)
     return -3;
 ```
 
@@ -540,7 +554,7 @@ cwnd(congestion window): 拥塞窗口
 ssthresh(slow start threshold): 慢开始门限
 
 ARQ(Automatic Repeat-reQuest): 自动重传请求
-UNA(Unacknowledged): 第一个尚未收到确认的序号，这意味着在它之前的数据包都已经被正确接收
+UNA(Unacknowledged): 第一个尚未收到确认的序号，这意味着在它之前的报文段都已经被正确接收
 ACK(Acknowledgment): 确认号，即期望收到的下一个报文段的序号
 ```
 
@@ -564,7 +578,7 @@ ARQ 协议
 
 拥塞控制
 
-1. KCP 方面可以通过 ikcp_nodelay 的 nc 来决定是否关闭流控，若将其设置为1，cwnd 将只取决于发送窗口大小和对端接收窗口大小的最小值，不再受 kcp->cwnd 的影响。当然 kcp->cwnd 还是照常调节，引入了慢开始、快恢复等机制。
+1. KCP 方面可以通过 ikcp_nodelay 的 nc 来控制流控的开启/关闭，若将其设置为1，cwnd 将只取决于发送窗口大小和对端接收窗口大小的最小值，不再受 kcp->cwnd 的影响。当然 kcp->cwnd 还是照常调节，和 TCP 一样，引入了慢开始、快恢复等机制。
 
 ## TPs
 
