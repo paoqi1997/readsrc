@@ -584,6 +584,8 @@ ARQ 协议
 
 [skywind3000/kcp - Sourcegraph](https://sourcegraph.com/github.com/skywind3000/kcp)
 
+[skywind3000/kcp - GitHub1s](https://github1s.com/skywind3000/kcp)
+
 [skywind3000/kcp | DeepWiki](https://deepwiki.com/skywind3000/kcp)
 
 [为什么需要 RUDP 协议](https://wmf.im/p/%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-rudp-%E5%8D%8F%E8%AE%AE/)
